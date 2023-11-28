@@ -1,0 +1,64 @@
+version: "3.8"
+services:
+  mongodb:
+    image: mongo:6-jammy
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb-data:/data/db
+      - ./apollo-mongo-kafka/models/init.js:/docker-entrypoint-initdb.d/init.js
+
+  mariadb:
+    image: mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=adminadmin
+      - MYSQL_DATABASE=preguntas
+    ports:
+      - '3306:3306'
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./apollo-mysql-kafka/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  kafka:
+    image: obsidiandynamics/kafka
+    restart: "no"
+    ports:
+      - '9093:9093'
+      - '9092:9092'
+      - '9094:9094'
+    expose:
+      - "9093"
+      - "9092"
+    hostname: kafka
+    environment:      
+      KAFKA_LISTENERS: "INTERNAL://:29092,EXTERNAL://:9093, EXTERNAL_LOCAL://:9092"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:29092,EXTERNAL://kafka:9093, EXTERNAL_LOCAL://:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT, EXTERNAL_LOCAL:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT: "6000"
+      KAFKA_RESTART_ATTEMPTS: "10"
+      KAFKA_RESTART_DELAY: "5"
+      ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL: "0"
+
+  apollo-mysql:
+    image: apollo-mysql-kafka
+    build: ./apollo-mysql-kafka
+    depends_on:
+      - mariadb
+      - kafka
+    ports:
+      - '4000:4000'
+
+  apollo-mongodb:
+    image: apollo-mongo-kafka
+    build: ./apollo-mongo-kafka
+    depends_on:
+      - mongodb
+      - kafka
+      - apollo-mysql
+    ports:
+      - '5000:5000'
+
+volumes:
+  mongodb-data:
+  mariadb-data:

@@ -1,0 +1,87 @@
+server {
+    listen 80;
+	proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+        
+	##
+	## Microservice: ms-proof 
+	##
+    location /proof {
+        proxy_pass http://localhost:8085/graphql;  
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+	##
+	## Microservice: ms-payment
+	##
+    location /payment {
+        proxy_pass http://localhost:8087/graphql;  
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+
+	##
+	## Microservice: ms-api-apiu 
+	##
+    location /mock-pay-u {
+        proxy_pass http://localhost:8094/api/v2/orders/setup;  
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+	location /mock-pay-u/error {
+        proxy_pass http://localhost:8094/api/v2/orders/payment;  
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    ##
+	## Microservice: ms-evaluation
+	##
+    location /evaluation {
+        grpc_pass grpc://localhost:9001;
+        grpc_set_header Host $host;
+        grpc_set_header X-Real-IP $remote_addr;
+        grpc_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        grpc_set_header X-Forwarded-Proto $scheme;
+    }
+    ##
+	## Microservice: ms-view blockchain
+	##
+
+    location /blockchain-status {
+        proxy_pass http://localhost:9876/obtener-nota;  
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /blockchain-query {
+        proxy_pass http://localhost:8086/graphql;  
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+} 
